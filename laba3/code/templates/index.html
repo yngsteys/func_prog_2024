@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система рекомендаций книг</title>
+    <!-- Подключаем шрифт Comfortaa -->
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Подключаем стили -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <h1>Система рекомендаций книг</h1>
+
+    <!-- Форма для ввода предпочтений -->
+    <form method="POST" action="/recommend">
+        <label for="title">Любимая книга:</label>
+        <input type="text" id="title" name="title" value="{{ user_preferences.title | default('') }}">
+    
+        <label for="category">Любимый жанр:</label>
+        <input type="text" id="category" name="category" value="{{ user_preferences.category | default('') }}">
+    
+        <label for="description">Ключевые слова (описание):</label>
+        <input type="text" id="description" name="description" value="{{ user_preferences.description | default('') }}">
+    
+        <label for="author">Автор (по желанию):</label>
+        <input type="text" id="author" name="author" value="{{ user_preferences.author | default('') }}">
+    
+        <!-- Фильтры -->
+        <label for="filter_category">Фильтр по жанру:</label>
+        <input type="text" id="filter_category" name="filter_category" value="{{ user_preferences.filter_category | default('') }}">
+    
+        <label for="filter_year">Фильтр по году (после):</label>
+        <input type="number" id="filter_year" name="filter_year" value="{{ user_preferences.filter_year | default('') }}">
+    
+        <!-- Сортировка -->
+        <label for="sort_by">Сортировать по:</label>
+        <select id="sort_by" name="sort_by">
+            <option value="Similarity_score" {% if user_preferences.sort_by == 'Similarity_score' %}selected{% endif %}>Рейтингу</option>
+            <option value="Title" {% if user_preferences.sort_by == 'Title' %}selected{% endif %}>Названию</option>
+            <option value="Publish Date" {% if user_preferences.sort_by == 'Publish Date' %}selected{% endif %}>Дате публикации</option>
+        </select>
+    
+        <button type="submit">Получить рекомендации</button>
+    </form>
+    
+
+    <!-- Таблица с рекомендациями -->
+    {% if recommendations %}
+    <h2>Рекомендуемые книги</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Жанр</th>
+                <th>Автор</th>
+                <th>Рейтинг</th>
+                <th>Год публикации</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for book in recommendations %}
+            <tr>
+                <td>{{ book['Title'] }}</td>
+                <td>{{ book['Category'] }}</td>
+                <td>{{ book['Authors'] }}</td>
+                <td>{{ book['Similarity_score'] }}</td>
+                <td>{{ book['Publish Date'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <!-- Кнопка для сохранения рекомендаций -->
+    <button id="saveButton">Сохранить рекомендации</button>
+    {% endif %}
+
+    <!-- Скрипт для сохранения рекомендаций -->
+    <script>
+        document.getElementById("saveButton").addEventListener("click", function() {
+            let recommendations = [];
+            {% for book in recommendations %}
+                recommendations.push({
+                    'Название': '{{ book["Title"] }}',
+                    'Жанр': '{{ book["Category"] }}',
+                    'Рейтинг': '{{ book["Similarity_score"] }}',
+                    'Автор': '{{ book["Authors"] }}',
+                    'Год публикации': '{{ book["Publish Date"] }}'
+                });
+            {% endfor %}
+
+            fetch('/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(recommendations)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+            });
+        });
+    </script>
+</body>
+</html>
